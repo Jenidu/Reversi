@@ -1,6 +1,6 @@
 *.vsidx
 .vs/
 .vscode/
-App/Mandelbrot/bin/
-App/Mandelbrot/obj/
-App/Mandelbrot/Mandelbrot.csproj.user
+App/Reversi/bin/
+App/Reversi/obj/
+App/Reversi/Reversi.csproj.user
