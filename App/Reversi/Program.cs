@@ -2,6 +2,9 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
 
@@ -35,7 +38,8 @@ Label aan_zet = new Label();
 
 /* Spelsituatie */
 int[,] game_state;  /* 0: van niemand, 1: van speler 1, 2: van speler 2 */
-
+byte current_player = 1;  /* Wie is er aan de beurt */
+bool help = false;
 
 opstartVenster();
 createNewBoard(6);
@@ -65,7 +69,7 @@ void opstartVenster()
     scherm.Controls.Add(aan_zet);
     aan_zet.Location = new Point(pos_voorbeeld_rondjes[0] + 5, pos_voorbeeld_rondjes[1] + r_voorbeeld_rondjes * 2 + 20);
     aan_zet.Size = new Size(100, 30);
-    aan_zet.Text = speler_namen[0] + " aan zet";
+    aan_zet.Text = speler_namen[current_player-1] + " aan zet";
 
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 4x4 spel", "4x4"));
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 6x6 spel", "6x6"));
@@ -118,6 +122,9 @@ void createNewBoard(int size){
     game_state[tile_dim/2, tile_dim/2 - 1] = 2;
     game_state[tile_dim/2 - 1, tile_dim/2] = 2;
 
+    current_player = 1;
+    help = false;
+
     scherm.Invalidate();
 }
 
@@ -152,18 +159,21 @@ void teken(object sender, PaintEventArgs pea){
     {
         for (int y = 0; y < tile_dim; y++)
         {
-            x_pos = grid_start[0] + tile_size*x;
-            y_pos = grid_start[1] + tile_size*y;
+            x_pos = grid_start[0] + tile_size*x + 2;
+            y_pos = grid_start[1] + tile_size*y + 2;
 
             if (game_state[x,y] == 1)  /* Speler 1 heeft x,y */
 
-                gr.FillEllipse(steen_kleuren[0], x_pos, y_pos, tile_size, tile_size);
+                gr.FillEllipse(steen_kleuren[0], x_pos, y_pos, tile_size-4, tile_size-4);
 
             else if (game_state[x,y] == 2)  /* Speler 2 heeft x,y */
 
-                gr.FillEllipse(steen_kleuren[1], x_pos, y_pos, tile_size, tile_size);
+                gr.FillEllipse(steen_kleuren[1], x_pos, y_pos, tile_size-4, tile_size-4);
         }
     }
+
+    if (help)  /* Hulp staat aan */
+        tekenHelp(gr);
 }
 
 int[] stenenTeller(){
@@ -184,9 +194,50 @@ int[] stenenTeller(){
     return stenen_teller;
 }
 
-void helpLaden(object o, EventArgs e){
+void tekenHelp(Graphics gr){
+
+    bool[,] mogelijke_pos = new bool [tile_dim, tile_dim];
+    int x_pos, y_pos;
+    int ellip_size = tile_size / 2;
+
+    for (int x = 0; x < tile_dim; x++)
+    {
+        for (int y = 0; y < tile_dim; y++)
+        {
+            if (game_state[x,y] == 0 && possiblePlacement(x, y))
+            {
+                x_pos = grid_start[0] + tile_size*x + tile_size/4;
+                y_pos = grid_start[1] + tile_size*y + tile_size/4;
+
+                gr.DrawEllipse(Pens.Black, x_pos, y_pos, ellip_size, ellip_size);
+            }
+        }
+    }
 
 }
+
+void helpLaden(object o, EventArgs e){
+
+    help = true;
+    scherm.Invalidate();
+}
+
+bool possiblePlacement(int x, int y){
+
+    /* Check if het mogelijk is om op x,y een tile te liggen voor 'current_player' */
+    for (int i = -1; i <= 1; i++)
+    {
+        for (int j = -1; j <= 1; j++)
+        {
+            if (x + i >= 0 && x + i < tile_dim && y + j >= 0 && y + j < tile_dim &&  /* Positie is niet out of bounds */
+            game_state[x+i,y+j] != 0 && game_state[x+i,y+j] != current_player)  /* Positie is van de andere speler */
+                return true;
+        }
+    }
+
+    return false;
+}
+
 
 //MessageBox.Show($"Speler {} heeft gewonnen!");
 
