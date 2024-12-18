@@ -8,35 +8,34 @@ using System.Windows.Forms.VisualStyles;
 /* Grootte en startposities */
 int[] Venster_Grootte = {320, 510}; /* Venster grootte */
 
-/* Tekst boxen grootte en posities */
-int[] StartVensterTekst = {10, 15};
-int[] TekstBox_PosVerschil = {0, 25};
-
-
+string[] speler_namen = {"blauw", "rood"};
 Brush[] steen_kleuren = {Brushes.Blue, Brushes.Red};  /* Steen kleuren */
 
 /* Scherm venster */
 Form scherm = new Form();
 scherm.Text = "Reversi";
-scherm.BackColor = Color.Beige;
+scherm.BackColor = Color.White;
 scherm.ClientSize = new Size(Venster_Grootte[0], Venster_Grootte[1]);
 
 /* Grid posities */
 int[] grid_start = {10, 200};
 int max_grid_size = 300;
+int[] pos_voorbeeld_rondjes = {30, 40};
+int r_voorbeeld_rondjes = 50;
 int grid_size, tile_size, tile_dim;  /* Grid properties */
 
 /* Knoppen */
 Button help_knop = new Button();
 
-/* Labels */
-Label label_plaatje = new Label();
-
 /* Dropdown */
 ComboBox nieuwspel_opties = new ComboBox();
 
+/* Label */
+Label aan_zet = new Label();
+
 /* Spelsituatie */
 int[,] game_state;  /* 0: van niemand, 1: van speler 1, 2: van speler 2 */
+
 
 opstartVenster();
 createNewBoard(6);
@@ -44,10 +43,10 @@ createNewBoard(6);
 nieuwspel_opties.SelectedIndexChanged += nieuwSpelOpties;  /* Dropdown veranderd */
 
 help_knop.Click += helpLaden;  /* Er is op 'help' geklikt */
-scherm.Paint += teken;
-
+scherm.Paint += teken;  /* Update graphics */
 
 Application.Run(scherm);
+
 
 void opstartVenster()
 {
@@ -61,6 +60,12 @@ void opstartVenster()
     scherm.Controls.Add(nieuwspel_opties);
     nieuwspel_opties.Location = new Point(120, 10);
     nieuwspel_opties.Text = "Nieuw spel";
+
+    /* Aan zet label */
+    scherm.Controls.Add(aan_zet);
+    aan_zet.Location = new Point(pos_voorbeeld_rondjes[0] + 5, pos_voorbeeld_rondjes[1] + r_voorbeeld_rondjes * 2 + 20);
+    aan_zet.Size = new Size(100, 30);
+    aan_zet.Text = speler_namen[0] + " aan zet";
 
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 4x4 spel", "4x4"));
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 6x6 spel", "6x6"));
@@ -119,50 +124,46 @@ void createNewBoard(int size){
 void teken(object sender, PaintEventArgs pea){
 
     Graphics gr = pea.Graphics;
+    int x_pos, y_pos;
 
     int[] stenen_aantal = stenenTeller();
 
-    // gr.FillEllipse(steen_kleuren[0], );
-    // gr.DrawString(stenen_aantal[0] + " stenen", , steen_kleuren[0], 10, 10);
-    // gr.FillEllipse(steen_kleuren[1], );
-    // gr.DrawString(stenen_aantal[1] + " stenen", , steen_kleuren[1], 10, 10);
-
+    gr.FillEllipse(steen_kleuren[0], pos_voorbeeld_rondjes[0], pos_voorbeeld_rondjes[1], r_voorbeeld_rondjes, r_voorbeeld_rondjes);
+    gr.DrawString(stenen_aantal[0] + " stenen", new Font("Arial", 14), steen_kleuren[0], pos_voorbeeld_rondjes[0] + r_voorbeeld_rondjes + 10, pos_voorbeeld_rondjes[1] + 10);
+    gr.FillEllipse(steen_kleuren[1], pos_voorbeeld_rondjes[0], pos_voorbeeld_rondjes[1] + r_voorbeeld_rondjes + 10, r_voorbeeld_rondjes, r_voorbeeld_rondjes);
+    gr.DrawString(stenen_aantal[1] + " stenen", new Font("Arial", 14), steen_kleuren[1], pos_voorbeeld_rondjes[0] + r_voorbeeld_rondjes + 10, pos_voorbeeld_rondjes[1] + r_voorbeeld_rondjes + 20);
 
     int grid_rd_offset = (max_grid_size - grid_size) / 2;  /* Halve grid rounding offset */
 
     for (int x = 0; x <= grid_size; x += tile_size)  /* Teken grid verticaal */
     {
-        int x_pos = x + grid_start[0] + grid_rd_offset; 
+        x_pos = x + grid_start[0] + grid_rd_offset; 
         gr.DrawLine(Pens.Black, x_pos, grid_start[1] + grid_rd_offset, x_pos, grid_start[1] + grid_rd_offset + grid_size);
     }
 
     for (int y = 0; y <= grid_size; y += tile_size)  /* Teken grid horizontaal */
     {
-        int y_pos = y + grid_start[1] + grid_rd_offset;
+        y_pos = y + grid_start[1] + grid_rd_offset;
         gr.DrawLine(Pens.Black, grid_start[0] + grid_rd_offset, y_pos, grid_start[0] + grid_rd_offset + grid_size, y_pos);
     }
 
 
-    for (int x = 0; x < tile_dim; x++)  /* Teken circles */
+    for (int x = 0; x < tile_dim; x++)  /* Teken circles in grid */
     {
         for (int y = 0; y < tile_dim; y++)
         {
-            if (game_state[x,y] == 1)
+            x_pos = grid_start[0] + tile_size*x;
+            y_pos = grid_start[1] + tile_size*y;
 
-                gr.FillEllipse(steen_kleuren[0], grid_start[0] + tile_size*x, grid_start[1] + tile_size*y, tile_size, tile_size);
+            if (game_state[x,y] == 1)  /* Speler 1 heeft x,y */
 
-            else if (game_state[x,y] == 2)
+                gr.FillEllipse(steen_kleuren[0], x_pos, y_pos, tile_size, tile_size);
 
-                gr.FillEllipse(steen_kleuren[1], grid_start[0] + tile_size*x, grid_start[1] + tile_size*y, tile_size, tile_size);
+            else if (game_state[x,y] == 2)  /* Speler 2 heeft x,y */
+
+                gr.FillEllipse(steen_kleuren[1], x_pos, y_pos, tile_size, tile_size);
         }
     }
-
-
-}
-
-
-void helpLaden(object o, EventArgs e){
-
 }
 
 int[] stenenTeller(){
@@ -181,6 +182,10 @@ int[] stenenTeller(){
     }
     
     return stenen_teller;
+}
+
+void helpLaden(object o, EventArgs e){
+
 }
 
 //MessageBox.Show($"Speler {} heeft gewonnen!");
