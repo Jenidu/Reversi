@@ -17,7 +17,7 @@ Brush[] steen_kleuren = {Brushes.Blue, Brushes.Red};  /* Steen kleuren */
 /* Scherm venster */
 Form scherm = new Form();
 scherm.Text = "Reversi";
-scherm.BackColor = Color.White;
+scherm.BackColor = Color.Beige;
 scherm.ClientSize = new Size(Venster_Grootte[0], Venster_Grootte[1]);
 
 /* Grid posities */
@@ -38,7 +38,7 @@ Label aan_zet = new Label();
 
 /* Spelsituatie */
 int[,] game_state;  /* 0: van niemand, 1: van speler 1, 2: van speler 2 */
-byte current_player = 1;  /* Wie is er aan de beurt */
+int current_player = 1;  /* Wie is er aan de beurt */
 bool help = false;
 
 opstartVenster();
@@ -48,6 +48,7 @@ nieuwspel_opties.SelectedIndexChanged += nieuwSpelOpties;  /* Dropdown veranderd
 
 help_knop.Click += helpLaden;  /* Er is op 'help' geklikt */
 scherm.Paint += teken;  /* Update graphics */
+scherm.MouseClick += muisKlik;  /* Event handler voor in- en uitzoomen van de muis */
 
 Application.Run(scherm);
 
@@ -69,7 +70,6 @@ void opstartVenster()
     scherm.Controls.Add(aan_zet);
     aan_zet.Location = new Point(pos_voorbeeld_rondjes[0] + 5, pos_voorbeeld_rondjes[1] + r_voorbeeld_rondjes * 2 + 20);
     aan_zet.Size = new Size(100, 30);
-    aan_zet.Text = speler_namen[current_player-1] + " aan zet";
 
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 4x4 spel", "4x4"));
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 6x6 spel", "6x6"));
@@ -123,7 +123,7 @@ void createNewBoard(int size){
     game_state[tile_dim/2 - 1, tile_dim/2] = 2;
 
     current_player = 1;
-    help = false;
+    // help = false;
 
     scherm.Invalidate();
 }
@@ -139,6 +139,8 @@ void teken(object sender, PaintEventArgs pea){
     gr.DrawString(stenen_aantal[0] + " stenen", new Font("Arial", 14), steen_kleuren[0], pos_voorbeeld_rondjes[0] + r_voorbeeld_rondjes + 10, pos_voorbeeld_rondjes[1] + 10);
     gr.FillEllipse(steen_kleuren[1], pos_voorbeeld_rondjes[0], pos_voorbeeld_rondjes[1] + r_voorbeeld_rondjes + 10, r_voorbeeld_rondjes, r_voorbeeld_rondjes);
     gr.DrawString(stenen_aantal[1] + " stenen", new Font("Arial", 14), steen_kleuren[1], pos_voorbeeld_rondjes[0] + r_voorbeeld_rondjes + 10, pos_voorbeeld_rondjes[1] + r_voorbeeld_rondjes + 20);
+
+    aan_zet.Text = speler_namen[current_player-1] + " aan zet";
 
     int grid_rd_offset = (max_grid_size - grid_size) / 2;  /* Halve grid rounding offset */
 
@@ -216,9 +218,24 @@ void tekenHelp(Graphics gr){
 
 }
 
-void helpLaden(object o, EventArgs e){
+void muisKlik(object o, MouseEventArgs ea){
 
-    help = true;
+    if (ea.X >= grid_start[0] && ea.Y >= grid_start[1])  /* Er wordt op het grid gedrukt */
+    {
+        int grid_x = (ea.X - grid_start[0]) / tile_size;
+        int grid_y = (ea.Y - grid_start[1]) / tile_size;
+
+        if (possiblePlacement(grid_x, grid_y) && game_state[grid_x, grid_y] == 0)
+        {
+            game_state[grid_x, grid_y] = current_player;
+            current_player = current_player == 1 ? 2 : 1;  /* Switch player */
+            scherm.Invalidate();
+        }
+    }
+}
+
+void helpLaden(object o, EventArgs e){
+    help = !help;  /* Switch help */
     scherm.Invalidate();
 }
 
