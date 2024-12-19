@@ -246,8 +246,11 @@ void doeZet(int x, int y){
     checkIngeslotenStenen(x, y);
     current_player = current_player == 1 ? 2 : 1;  /* Switch player */
 
-    if (!kanSpelerZetDoen())  /* Als de huidige speler geen zet kan doen ga naar terug naar de vorige speler */
+    if (!kanSpelerZetDoen()) {  /* Als de huidige speler geen zet kan doen ga naar terug naar de vorige speler */
         current_player = current_player == 1 ? 2 : 1;  /* Switch player */
+        if (!kanSpelerZetDoen())
+            eindeSpel();
+    }
 
     scherm.Invalidate();
 }
@@ -275,46 +278,26 @@ bool possiblePlacement(int x, int y){
 
 void checkIngeslotenStenen(int mid_x, int mid_y){
 
-    int[,] new_upd_pos = new int[tile_dim*tile_dim, 2];
-    int[,] upd_pos = new int[tile_dim*tile_dim, 2];
-    int new_upd_pos_n = 1, upd_pos_n;
-
-    new_upd_pos[0,0] = mid_x;
-    new_upd_pos[0,1] = mid_y;
-
-    for (int upd_pos_i = 0; upd_pos_i < new_upd_pos_n; upd_pos_i++)  /* Loop door alle geupdated posities */
+    for (int x_dir = -1; x_dir < 2; x_dir++)
     {
-        upd_pos = new_upd_pos;
-        upd_pos_n = new_upd_pos_n;  /* Wissel nieuwe 'upd_pos_n' */
-        new_upd_pos_n = 0;  /* Reset 'new_upd_pos_n' */
-
-        for (int x_dir = -1; x_dir < 2; x_dir++)
+        for (int y_dir = -1; y_dir < 2; y_dir++)
         {
-            for (int y_dir = -1; y_dir < 2; y_dir++)
+            if ((x_dir == 0 && y_dir == 0) ||  /* Direction verwijst naar zichzelf (dat kan niet) */
+            (!checkBoundsGT(mid_x + x_dir, mid_y + y_dir) || !otherPlayer(game_state[mid_x + x_dir, mid_y + y_dir])))  /* Eerste positie moet van de andere speler zijn om een mogelijke ingesloten stenen te hebben */
+                continue;
+
+            for (int depth = 2; depth < tile_dim; depth++)
             {
-                if ((x_dir == 0 && y_dir == 0) ||  /* Direction verwijst naar zichzelf (dat kan niet) */
-                (!checkBoundsGT(upd_pos[upd_pos_i, 0] + x_dir, upd_pos[upd_pos_i, 1] + y_dir) || !otherPlayer(game_state[upd_pos[upd_pos_i, 0] + x_dir, upd_pos[upd_pos_i, 1] + y_dir])))  /* Eerste positie moet van de andere speler zijn om een mogelijke ingesloten stenen te hebben */
-                    continue;
+                if (!checkBoundsGT(mid_x + x_dir*depth, mid_y + y_dir*depth) || game_state[mid_x + x_dir*depth, mid_y + y_dir*depth] == 0)  /* Is geen ingesloten stenen */
+                    break;
 
-                for (int depth = 2; depth < tile_dim; depth++)
+                else if (game_state[mid_x + x_dir*depth, mid_y + y_dir*depth] == current_player)  /* Er zijn ingesloten stenen */
                 {
-                    if (!checkBoundsGT(upd_pos[upd_pos_i, 0] + x_dir*depth, upd_pos[upd_pos_i, 1] + y_dir*depth) || game_state[upd_pos[upd_pos_i, 0] + x_dir*depth, upd_pos[upd_pos_i, 1] + y_dir*depth] == 0)  /* Is geen ingesloten stenen */
-                        break;
 
-                    else if (game_state[upd_pos[upd_pos_i, 0] + x_dir*depth, upd_pos[upd_pos_i, 1] + y_dir*depth] == current_player)  /* Er zijn ingesloten stenen */
-                    {
-                        for (int i = 1; i < depth; i++)
-                        {
-                            game_state[upd_pos[upd_pos_i, 0] + x_dir*i, upd_pos[upd_pos_i, 1] + y_dir*i] = current_player;  /* Update game_state */
+                    for (int i = 1; i < depth; i++)
+                        game_state[mid_x + x_dir*i, mid_y + y_dir*i] = current_player;  /* Update game_state */
 
-                            /* Voeg nieuwe positie toe aan update array */
-                            new_upd_pos[new_upd_pos_n, 0] = upd_pos[upd_pos_i, 0] + x_dir*i;
-                            new_upd_pos[new_upd_pos_n, 1] = upd_pos[upd_pos_i, 1] + y_dir*i;
-                            new_upd_pos_n++;
-                        }
-
-                        break;
-                    }
+                    break;
                 }
             }
         }
@@ -343,8 +326,19 @@ bool kanSpelerZetDoen(){
     return false;
 }
 
-//MessageBox.Show($"Speler {} heeft gewonnen!");
+void eindeSpel(){
 
+    int[] stenen_aantal = stenenTeller();
+
+    scherm.Invalidate();
+    
+    if (stenen_aantal[0] > stenen_aantal[1])
+        MessageBox.Show($"{speler_namen[0]} heeft gewonnen!");
+    else if (stenen_aantal[0] < stenen_aantal[1])
+        MessageBox.Show($"{speler_namen[1]} heeft gewonnen!");
+    else
+        MessageBox.Show("Remise!");
+}
 public class DropdownItem
 {
     public string Text { get; set; }
