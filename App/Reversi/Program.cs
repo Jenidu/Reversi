@@ -1,13 +1,7 @@
 ﻿/* Library import */
 using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
-using Microsoft.VisualBasic.Devices;
 
 /* Grootte en startposities */
 int[] Venster_Grootte = {320, 510}; /* Venster grootte */
@@ -40,7 +34,7 @@ Label aan_zet = new Label();
 /* Spelsituatie */
 int[,] game_state;  /* 0: van niemand, 1: van speler 1, 2: van speler 2 */
 int current_player = 1;  /* Wie is er aan de beurt */
-bool help = false;
+bool help = false, computer = false;
 
 opstartVenster();
 createNewBoard(6);
@@ -64,7 +58,8 @@ void opstartVenster()
 
     /* Dropdown */
     scherm.Controls.Add(nieuwspel_opties);
-    nieuwspel_opties.Location = new Point(120, 10);
+    nieuwspel_opties.Location = new Point(30, 10);
+    nieuwspel_opties.Size = new Size(210, nieuwspel_opties.Height);
     nieuwspel_opties.Text = "Nieuw spel";
 
     /* Aan zet label */
@@ -76,6 +71,10 @@ void opstartVenster()
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 6x6 spel", "6x6"));
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 8x8 spel", "8x8"));
     nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 10x10 spel", "10x10"));
+    nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 4x4 spel tegen computer", "4x4c"));
+    nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 6x6 spel tegen computer", "6x6c"));
+    nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 8x8 spel tegen computer", "8x8c"));
+    nieuwspel_opties.Items.Add(new DropdownItem("Start nieuw 10x10 spel tegen computer", "10x10c"));
 }
 
 void nieuwSpelOpties(object o, EventArgs e)
@@ -86,15 +85,35 @@ void nieuwSpelOpties(object o, EventArgs e)
         {
             case "4x4":
                 createNewBoard(4);
+                computer = false;
                 break;
             case "6x6":
                 createNewBoard(6);
+                computer = false;
                 break;
             case "8x8":
                 createNewBoard(8);
+                computer = false;
                 break;
             case "10x10":
                 createNewBoard(10);
+                computer = false;
+                break;
+            case "4x4c":
+                createNewBoard(4);
+                computer = true;
+                break;
+            case "6x6c":
+                createNewBoard(6);
+                computer = true;
+                break;
+            case "8x8c":
+                createNewBoard(8);
+                computer = true;
+                break;
+            case "10x10c":
+                createNewBoard(10);
+                computer = true;
                 break;
             default:
                 Console.WriteLine($"Incorrect item selected: type: {selectedItem.Type}, Text: {selectedItem.Text}");
@@ -229,8 +248,9 @@ void muisKlik(object o, MouseEventArgs ea){
         if (possiblePlacement(grid_x, grid_y))
         {
             doeZet(grid_x, grid_y);
-            // if (computer)
-            //     AutoDoeZet();
+
+            if (computer)  /* Laat de computer een random zet doen */
+                AutoDoeZet();
         }
     }
 }
@@ -253,6 +273,30 @@ void doeZet(int x, int y){
     }
 
     scherm.Invalidate();
+}
+
+void AutoDoeZet(){
+
+    int[,] mogelijke_pos = new int [tile_dim*tile_dim,2];
+    int mogelijke_n = 0;
+
+    for (int x = 0; x < tile_dim; x++)
+    {
+        for (int y = 0; y < tile_dim; y++)
+        {
+            if (possiblePlacement(x, y)) {
+                mogelijke_pos[mogelijke_n, 0] = x;
+                mogelijke_pos[mogelijke_n, 1] = y;
+                mogelijke_n++;
+            }
+        }
+    }
+
+    /* Keis een random mogelijke zet */
+    Random rnd = new Random();
+    int rnd_int = rnd.Next(0, mogelijke_n);
+
+    doeZet(mogelijke_pos[rnd_int,0], mogelijke_pos[rnd_int,1]);  /* Computer doet een zet */
 }
 
 bool possiblePlacement(int x, int y){
@@ -335,7 +379,12 @@ void eindeSpel(){
     if (stenen_aantal[0] > stenen_aantal[1])
         MessageBox.Show($"{speler_namen[0]} heeft gewonnen!");
     else if (stenen_aantal[0] < stenen_aantal[1])
-        MessageBox.Show($"{speler_namen[1]} heeft gewonnen!");
+    {
+        if (!computer)
+            MessageBox.Show($"{speler_namen[1]} heeft gewonnen!");
+        else
+            MessageBox.Show($"computer ({speler_namen[1]}) heeft gewonnen!");
+    }
     else
         MessageBox.Show("Remise!");
 }
